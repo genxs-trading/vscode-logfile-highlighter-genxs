@@ -11,146 +11,134 @@
 		</array>
 
 		<key>name</key>
-		<string>Log file</string>
+		<string>GenXs log file</string>
 
 		<key>patterns</key>
 		<array>
-
-			<!-- Log levels -->
-
-			<!-- Trace/Verbose -->
+			<!-- GenXs Log lines -->
 			<dict>
 				<key>match</key>
-				<string>\b([Tt]race|TRACE)\b:?</string>
+				<string>^((\d{2}:\d{2}:\d{2}\.\d{6})(~\d+) (\d+)(#[0-9a-f]+)(?: |([|]))(?:(FATAL|ERROR)|(WARNG)|([A-Za-z]{5}))(::)((?:[^:]|:\\)+\\)?([^:]+):(\d+) +([^{ &]+)(?:({)([^}]+)(}))?(&)? ? \t)</string>
 
-				<key>name</key>
-				<string>comment log.verbose</string>
+				<key>captures</key>
+				<dict>
+					<key>1</key>
+					<dict>
+						<key>name</key>
+						<string>genxs.log.lineprefix</string>
+					</dict>
+					
+					<key>2</key>
+					<dict>
+						<key>name</key>
+						<string>comment.block genxs.log.time</string>
+					</dict>
+					
+					<key>3</key>
+					<dict>
+						<key>name</key>
+						<string>constant.numeric.integer.decimal genxs.log.thread</string>
+					</dict>
+					
+					<key>4</key>
+					<dict>
+						<key>name</key>
+						<string>constant.numeric.integer.decimal genxs.log.ticks</string>
+					</dict>
+					
+					<key>5</key>
+					<dict>
+						<key>name</key>
+						<string>constant.numeric.integer.hexadecimal genxs.log.hash</string>
+					</dict>
+					
+					<key>6</key>
+					<dict>
+						<key>name</key>
+						<string>token.warn-token strong genxs.log.muted</string>
+					</dict>
+					
+					<key>7</key>
+					<dict>
+						<key>name</key>
+						<string>token.error-token log.error genxs.log.level.error</string>
+					</dict>
+					
+					<key>8</key>
+					<dict>
+						<key>name</key>
+						<string>token.warn-token log.warning genxs.log.level.warning</string>
+					</dict>
+					
+					<key>9</key>
+					<dict>
+						<key>name</key>
+						<string>token.info-token log.info genxs.log.level</string>
+					</dict>
+					
+					<key>10</key>
+					<dict>
+						<key>name</key>
+						<string>punctuation.separator genxs.log.separator</string>
+					</dict>
+					
+					<key>11</key>
+					<dict>
+						<key>name</key>
+						<string>entity.name.namespace genxs.log.path</string>
+					</dict>
+					
+					<key>12</key>
+					<dict>
+						<key>name</key>
+						<string>entity.name.class genxs.log.file</string>
+					</dict>
+					
+					<key>13</key>
+					<dict>
+						<key>name</key>
+						<string>constant.numeric.integer.decimal genxs.log.linenumber</string>
+					</dict>
+					
+					<key>14</key>
+					<dict>
+						<key>name</key>
+						<string>entity.name.function genxs.log.method</string>
+					</dict>
+					
+					<key>15</key>
+					<dict>
+						<key>name</key>
+						<string>comment.block punctuation.definition.comment genxs.log.separator</string>
+					</dict>
+					
+					<key>16</key>
+					<dict>
+						<key>name</key>
+						<string>constant genxs.log.context</string>
+					</dict>
+					
+					<key>17</key>
+					<dict>
+						<key>name</key>
+						<string>comment.block punctuation.definition.comment genxs.log.separator</string>
+					</dict>
+					
+					<key>18</key>
+					<dict>
+						<key>name</key>
+						<string>token.warn-token genxs.log.reference</string>
+					</dict>
+				</dict>
 			</dict>
 
-			<!-- Serilog VERBOSE -->
+			<!-- numbers, true, false, null, #hex, GUIDs, MAC, IPv6 addresses: 89:A1:23:45:AB:C0, fde8:e767:269c:0:9425:3477:7c8f:7f1a -->
 			<dict>
 				<key>match</key>
-				<string>(?i)\[(verbose|verb|vrb|vb|v)\]</string>
+				<string>\b(?:\d+(?:[,.:-]\d+(?:[^\s]+)?)*|true|false|null|#\h+|(?:\h{2,}[:-])+\h{2,}+)\b</string>
 
 				<key>name</key>
-				<string>comment log.verbose</string>
-			</dict>
-
-			<!-- Android logcat Verbose -->
-			<dict>
-				<key>match</key>
-				<string>(?<=^[\s\d\p]*)\bV\b</string>
-
-				<key>name</key>
-				<string>comment log.verbose</string>
-			</dict>
-
-			<!-- DEBUG -->
-			<dict>
-				<key>match</key>
-				<string>\b(DEBUG|Debug)\b|(?i)\b(debug)\:</string>
-
-				<key>name</key>
-				<string>markup.changed log.debug</string>
-			</dict>
-
-			<!-- Serilog DEBUG -->
-			<dict>
-				<key>match</key>
-				<string>(?i)\[(debug|dbug|dbg|de|d)\]</string>
-
-				<key>name</key>
-				<string>markup.changed log.debug</string>
-			</dict>
-
-			<!-- Android logcat Debug -->
-			<dict>
-				<key>match</key>
-				<string>(?<=^[\s\d\p]*)\bD\b</string>
-
-				<key>name</key>
-				<string>markup.changed log.debug</string>
-			</dict>
-
-			<!-- INFO -->
-			<dict>
-				<key>match</key>
-				<string>\b(HINT|INFO|INFORMATION|Info|NOTICE|II)\b|(?i)\b(info|information)\:</string>
-
-				<key>name</key>
-				<string>markup.inserted log.info</string>
-			</dict>
-
-			<!-- Serilog INFO -->
-			<dict>
-				<key>match</key>
-				<string>(?i)\[(information|info|inf|in|i)\]</string>
-
-				<key>name</key>
-				<string>markup.inserted log.info</string>
-			</dict>
-
-			<!-- Android logcat Info -->
-			<dict>
-				<key>match</key>
-				<string>(?<=^[\s\d\p]*)\bI\b</string>
-
-				<key>name</key>
-				<string>markup.inserted log.info</string>
-			</dict>
-
-			<!-- WARN -->
-			<dict>
-				<key>match</key>
-				<string>\b(WARNING|WARN|Warn|WW)\b|(?i)\b(warning)\:</string>
-
-				<key>name</key>
-				<string>markup.deleted log.warning</string>
-			</dict>
-
-			<!-- Serilog WARN -->
-			<dict>
-				<key>match</key>
-				<string>(?i)\[(warning|warn|wrn|wn|w)\]</string>
-
-				<key>name</key>
-				<string>markup.deleted log.warning</string>
-			</dict>
-
-			<!-- Android logcat Warning -->
-			<dict>
-				<key>match</key>
-				<string>(?<=^[\s\d\p]*)\bW\b</string>
-
-				<key>name</key>
-				<string>markup.deleted log.warning</string>
-			</dict>
-
-			<!-- ERROR -->
-			<dict>
-				<key>match</key>
-				<string>\b(ALERT|CRITICAL|EMERGENCY|ERROR|FAILURE|FAIL|Fatal|FATAL|Error|EE)\b|(?i)\b(error)\:</string>
-
-				<key>name</key>
-				<string>string.regexp, strong log.error</string>
-			</dict>
-
-			<!-- Serilog ERROR -->
-			<dict>
-				<key>match</key>
-				<string>(?i)\[(error|eror|err|er|e|fatal|fatl|ftl|fa|f)\]</string>
-
-				<key>name</key>
-				<string>string.regexp, strong log.error</string>
-			</dict>
-
-			<!-- Android logcat Error -->
-			<dict>
-				<key>match</key>
-				<string>(?<=^[\s\d\p]*)\bE\b</string>
-
-				<key>name</key>
-				<string>string.regexp, strong log.error</string>
+				<string>constant genxs.log.literal</string>
 			</dict>
 
 			<!-- ISO dates ("2016-08-23") -->
@@ -159,23 +147,23 @@
 				<string>\b\d{4}-\d{2}-\d{2}(?=T|\b)</string>
 
 				<key>name</key>
-				<string>comment log.date</string>
+				<string>comment genxs.log.date</string>
 			</dict>
 
 			<!-- Culture specific dates ("23/08/2016", "23.08.2016") -->
 			<dict>
 				<key>match</key>
-				<string>(?<=(^|\s))\d{2}[^\w\s]\d{2}[^\w\s]\d{4}\b</string>
+				<string>\b\d{2}[^\w\s]\d{2}[^\w\s]\d{4}\b</string>
 
 				<key>name</key>
-				<string>comment log.date</string>
+				<string>comment genxs.log.date.other</string>
 			</dict>
 
 			<!-- Clock times with optional timezone and optional T prefix ("T09:13:16", "09:13:16", "09:13:16.323", "09:13:16+01:00") -->
 			<dict>
 				<key>match</key>
-				<string>T?\d{1,2}:\d{2}(:\d{2}([.,]\d{1,})?)?(Z| ?[+-]\d{1,2}:\d{2})?\b</string>
-
+				<string>\d{1,2}:\d{2}(?::\d{2}(?:[.,]\d{1,})?)?(?:Z| ?[+-]\d{1,2}:\d{2})?\b</string>
+				
 				<key>name</key>
 				<string>comment log.date</string>
 			</dict>
@@ -186,43 +174,16 @@
 				<string>T\d{2}\d{2}(\d{2}([.,]\d{1,})?)?(Z| ?[+-]\d{1,2}\d{2})?\b</string>
 
 				<key>name</key>
-				<string>comment log.date</string>
+				<string>comment genxs.log.time.other</string>
 			</dict>
 
-			<!-- Git commit hashes of length 40, 10 or 7 -->
+			<!-- Git commit hashes of length 7, 10 or 40 -->
 			<dict>
 				<key>match</key>
-				<string>\b([0-9a-fA-F]{40}|[0-9a-fA-F]{10}|[0-9a-fA-F]{7})\b</string>
+				<string>\b(?:\h{7}(\h{3}|\h{33})?)\b</string>
 
 				<key>name</key>
-				<string>constant.language</string>
-			</dict>
-
-			<!-- Guids -->
-			<dict>
-				<key>match</key>
-				<string>\b[0-9a-fA-F]{8}[-]?([0-9a-fA-F]{4}[-]?){3}[0-9a-fA-F]{12}\b</string>
-
-				<key>name</key>
-				<string>constant.language log.constant</string>
-			</dict>
-
-			<!-- MAC addresses: 89:A1:23:45:AB:C0, fde8:e767:269c:0:9425:3477:7c8f:7f1a -->
-			<dict>
-				<key>match</key>
-				<string>\b([0-9a-fA-F]{2,}[:-])+[0-9a-fA-F]{2,}+\b</string>
-
-				<key>name</key>
-				<string>constant.language log.constant</string>
-			</dict>
-
-			<!-- Constants -->
-			<dict>
-				<key>match</key>
-				<string>\b([0-9]+|true|false|null)\b</string>
-
-				<key>name</key>
-				<string>constant.language log.constant</string>
+				<string>constant.numeric.integer.hexadecimal genxs.log.githash</string>
 			</dict>
 
 			<!-- Hex Constants -->
@@ -240,7 +201,7 @@
 				<string>"[^"]*"</string>
 
 				<key>name</key>
-				<string>string log.string</string>
+				<string>string.quoted.double</string>
 			</dict>
 
 			<dict>
@@ -248,16 +209,16 @@
 				<string>(?<![\w])'[^']*'</string>
 
 				<key>name</key>
-				<string>string log.string</string>
+				<string>string</string>
 			</dict>
 
 			<!-- Exception type names -->
 			<dict>
 				<key>match</key>
-				<string>\b([a-zA-Z.]*Exception)\b</string>
+				<string>\b(?:[a-zA-Z.]*Exception)\b</string>
 
 				<key>name</key>
-				<string>string.regexp, emphasis log.exceptiontype</string>
+				<string>string.regexp emphasis genxs.log.exception</string>
 			</dict>
 
 			<!-- Colorize rows of exception call stacks -->
@@ -269,7 +230,7 @@
 				<string>$</string>
 
 				<key>name</key>
-				<string>string.key, emphasis log.exception</string>
+				<string>string.key emphasis genxs.log.stacktrace</string>
 			</dict>
 
 			<!-- Match Urls -->
@@ -278,7 +239,7 @@
 				<string>\b[a-z]+://\S+\b/?</string>
 
 				<key>name</key>
-				<string>constant.language log.constant</string>
+				<string>constant.language</string>
 			</dict>
 
 			<!-- Match character and . sequences (such as namespaces)
@@ -288,7 +249,7 @@
 				<string>(?<![\w/\\])([\w-]+\.)+([\w-])+(?![\w/\\])</string>
 
 				<key>name</key>
-				<string>constant.language log.constant</string>
+				<string>constant.language</string>
 			</dict>
 		</array>
 
