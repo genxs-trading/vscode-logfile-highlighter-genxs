@@ -81,15 +81,22 @@ export class CustomPatternDecorator {
         const startPos = new vscode.Position(change.range.start.line, 0);
         const docCache = this._cache.get(doc.uri);
 
-        const contentToEnd: string =
-            doc.getText(new vscode.Range(startPos, doc.lineAt(doc.lineCount - 1).range.end));
+        // GenXs Performance: Only process a reasonable window around the change instead of to end of document.
+        // For typical edits, we only need to re-scan ~100 lines after the change. This significantly
+        // improves performance for large files (e.g., 17K+ line log files).
+        const maxLinesToScan = 100;
+        const endLine = Math.min(doc.lineCount - 1, change.range.end.line + maxLinesToScan);
+        const endPos = doc.lineAt(endLine).range.end;
+
+        const contentToEnd: string = doc.getText(new vscode.Range(startPos, endPos));
 
         for (const pattern of this._configPattern) {
             const patternCache = docCache.get(pattern);
 
             // Remove all ranges from the cache that occur after the changed range (change.range).
+            // GenXs Performance: Also remove ranges within our scan window to avoid duplicates
             const patternRanges = patternCache.filter((range) => {
-                return range.end.isBefore(change.range.start);
+                return range.end.isBefore(change.range.start) || range.start.line > endLine;
             });
 
             for (const regex of pattern.regexes) {
