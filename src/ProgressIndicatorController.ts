@@ -8,6 +8,9 @@ export class ProgressIndicatorController {
     private _progressIndicator: ProgressIndicator;
     private _disposableSubscriptions: vscode.Disposable;
     private _statusBarItem: vscode.StatusBarItem;
+    // GenXs Performance: Debounce selection changes to avoid excessive decoration updates
+    private _debounceTimer: NodeJS.Timeout | undefined;
+    private readonly _debounceDelay = 150; // milliseconds
 
     constructor(progressIndicator: ProgressIndicator) {
         this._progressIndicator = progressIndicator;
@@ -18,6 +21,11 @@ export class ProgressIndicatorController {
     }
 
     public removeDecorations() {
+        // Clear any pending debounce timer
+        if (this._debounceTimer) {
+            clearTimeout(this._debounceTimer);
+            this._debounceTimer = undefined;
+        }
         this._progressIndicator.removeAllDecorations();
         this.clearEditorSelections();
     }
@@ -45,6 +53,11 @@ export class ProgressIndicatorController {
     }
 
     public dispose() {
+        // Clear any pending debounce timer
+        if (this._debounceTimer) {
+            clearTimeout(this._debounceTimer);
+            this._debounceTimer = undefined;
+        }
         this._statusBarItem.dispose();
         this._disposableSubscriptions.dispose();
     }
@@ -74,7 +87,8 @@ export class ProgressIndicatorController {
         this.unregisterSelectionEventHandlers();
 
         const subscriptions: vscode.Disposable[] = [];
-        vscode.window.onDidChangeTextEditorSelection(event => this.decorateLines(event), this, subscriptions);
+        // GenXs Performance: Use debounced handler to prevent excessive decoration updates during rapid selection changes
+        vscode.window.onDidChangeTextEditorSelection(event => this.debouncedDecorateLines(event), this, subscriptions);
         this._disposableSubscriptions = vscode.Disposable.from(...subscriptions);
     }
 
@@ -83,6 +97,22 @@ export class ProgressIndicatorController {
             this._disposableSubscriptions.dispose();
             this._disposableSubscriptions = null;
         }
+    }
+
+    /// GenXs Performance: Debounced version of decorateLines to reduce excessive updates
+    /// during rapid selection changes (e.g., when using arrow keys or dragging).
+    /// Waits for selection to stabilize before applying decorations.
+    private debouncedDecorateLines(event: vscode.TextEditorSelectionChangeEvent) {
+        // Clear any existing timer
+        if (this._debounceTimer) {
+            clearTimeout(this._debounceTimer);
+        }
+
+        // Set a new timer to execute after the debounce delay
+        this._debounceTimer = setTimeout(() => {
+            this._debounceTimer = undefined;
+            this.decorateLines(event);
+        }, this._debounceDelay);
     }
 
     /// Decorates the lines in the specified range of the given text editor.

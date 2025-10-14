@@ -37,6 +37,13 @@ export class ProgressIndicator {
     public decorateLines(editor: vscode.TextEditor, startLine: number, endLine: number) {
         const doc = editor.document;
 
+        // GenXs Performance: Skip decoration for very large selections (>1000 lines) to avoid performance issues
+        const selectionSize = endLine - startLine + 1;
+        const maxLinesToDecorate = 1000;
+        if (selectionSize > maxLinesToDecorate) {
+            return;
+        }
+
         let texts = this._selectionHelper.getFirstAndLastLines(editor, doc);
         if (texts !== undefined) {
             let timePeriod = this._timeCalculator.getTimePeriod(texts.startLine, texts.endLine);
