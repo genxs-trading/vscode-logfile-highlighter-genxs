@@ -40,15 +40,17 @@ export class ProgressIndicatorController {
         }
     }
 
-    private getConfiguration(): { enableProgressIndicator: boolean, progressIndicatorUnderlineColor: string } {
+    private getConfiguration(): { enableProgressIndicator: boolean, progressIndicatorUnderlineColor: string, maxLinesToDecorate: number } {
         const config = vscode.workspace.getConfiguration('logFileHighlighter');
 
         const enableProgressIndicator = config.get('enableProgressIndicator', true);
         const progressIndicatorUnderlineColor = config.get('progressIndicatorUnderlineColor', '#00ff1f8f');
+        const maxLinesToDecorate = config.get('maxLinesToDecorate', 1000000);
 
         return {
             enableProgressIndicator,
-            progressIndicatorUnderlineColor
+            progressIndicatorUnderlineColor,
+            maxLinesToDecorate
         };
     }
 
@@ -73,6 +75,7 @@ export class ProgressIndicatorController {
             this.registerSelectionEventHandlers();
             this._progressIndicator.removeAllDecorations(); // Do this before the call to setUnderlineColor since the decoration object will be recreated
             this._progressIndicator.setUnderlineColor(config.progressIndicatorUnderlineColor);
+            this._progressIndicator.setMaxLinesToDecorate(config.maxLinesToDecorate);
         }
         else {
             // Remove all decorations in case they're disabled now or have changed settings

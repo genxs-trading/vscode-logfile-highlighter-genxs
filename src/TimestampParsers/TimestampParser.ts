@@ -2,8 +2,9 @@
 
 import moment = require("moment");
 import { TimeFormatParser } from "./TimeFormatParser";
-// GenXs Performance: Commented out unused timestamp parsers for GenXs log format.
-// Only ISO formats are used in GenXs logs. Uncomment if other formats are needed.
+import { CustomMicrosecondTimeFormatParser } from "./CustomMicrosecondTimeFormatParser";
+// GenXs Performance: Use custom parser first, then ISO for fallback
+// Uncomment additional parsers if needed for other log formats:
 // import { DanishDateFormatParser } from "./DanishDateFormatParser";
 // import { IsoDateFormatParser } from "./IsoDateFormatParser";
 // import { USDateFormatParser } from "./USDateFormatParser";
@@ -18,20 +19,14 @@ export class TimestampParser {
     private parsers: TimestampFormatParser[];
 
     constructor() {
-        // GenXs Performance: Only use ISO format parsers for GenXs logs.
-        // This reduces timestamp parsing time by ~70-80% for typical GenXs log files.
-        // Uncomment additional parsers if needed for other log formats:
+        // GenXs Performance: Use custom parser first (most common), then ISO for fallback.
+        // This handles both time-only timestamps and full ISO datetime timestamps.
+        // The custom parser matches: HH:MM:SS.mmmmmm (e.g., 17:13:42.901377)
+        // ISO parser handles: YYYY-MM-DD HH:MM:SS+TZ (e.g., 2025-09-25 22:26:38+02:00)
         this.parsers = [
-            new IsoDateTimeFormatParser(),      // 2025-10-13 18:55:14.723802+02:00
-            new IsoSlimDateTimeFormatParser(),  // 2020-01-28T14:45:30.123Z
-            new TimeFormatParser()              // 14:45:30.123456
-            // new USDateTimeFormatParser(),
-            // new DanishDateTimeFormatParser(),
-            // new LittleEndianDateTimeFormatParser(),
-            // new IsoDateFormatParser(),
-            // new USDateFormatParser(),
-            // new DanishDateFormatParser(),
-            // new LittleEndianDateFormatParser(),
+            new CustomMicrosecondTimeFormatParser(), // 17:13:42.901377 (custom format - most common)
+            new IsoDateTimeFormatParser(),           // 2025-09-25 22:26:38+02:00 (fallback for mixed logs)
+            new IsoSlimDateTimeFormatParser()        // 2020-01-28T14:45:30.123Z (fallback)
         ];
     }
 

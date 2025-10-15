@@ -12,6 +12,7 @@ export class ProgressIndicator {
     private _timeCalculator: TimePeriodCalculator;
     private _selectionHelper: SelectionHelper;
     private _timestampParser: TimestampParser;
+    private _maxLinesToDecorate: number = 1000000;
 
     constructor(timeCalculator: TimePeriodCalculator, selectionHelper: SelectionHelper, timestampParser: TimestampParser) {
         this._timeCalculator = timeCalculator;
@@ -27,6 +28,10 @@ export class ProgressIndicator {
         });
     }
 
+    public setMaxLinesToDecorate(maxLines: number) {
+        this._maxLinesToDecorate = maxLines;
+    }
+
     /**
      * Decorates the lines in the specified range of the given text editor.
      * 
@@ -37,51 +42,92 @@ export class ProgressIndicator {
     public decorateLines(editor: vscode.TextEditor, startLine: number, endLine: number) {
         const doc = editor.document;
 
-        // GenXs Performance: Skip decoration for very large selections (>1000 lines) to avoid performance issues
+        // GenXs Performance: Skip decoration for very large selections to avoid performance issues
         const selectionSize = endLine - startLine + 1;
-        const maxLinesToDecorate = 1000;
-        if (selectionSize > maxLinesToDecorate) {
+        console.log('ProgressIndicator: decorateLines called with', selectionSize, 'lines (max:', this._maxLinesToDecorate, ')');
+        if (selectionSize > this._maxLinesToDecorate) {
+            vscode.window.showInformationMessage(
+                `Selection is too large (${selectionSize} lines). Maximum is ${this._maxLinesToDecorate} lines. ` +
+                `You can increase this in settings: logFileHighlighter.maxLinesToDecorate`
+            );
             return;
         }
 
         let texts = this._selectionHelper.getFirstAndLastLines(editor, doc);
+        console.log('ProgressIndicator: First and last lines:', texts);
         if (texts !== undefined) {
-            let timePeriod = this._timeCalculator.getTimePeriod(texts.startLine, texts.endLine);
+            // Note: We don't use timePeriod anymore, we calculate from collected timestamps
+            // This allows us to ignore non-matching timestamps and only use custom format
 
-            if (timePeriod !== undefined) {
-
-                const endLineTimestamp = this._timestampParser.getTimestampFromText(texts.endLine);
-                if (!endLineTimestamp) {
-                    // If no timestamp is found in the end line, we cannot calculate progress
-                    return;
-                }
-                
-                let timestampStartIndex = endLineTimestamp.matchIndex;
-                let timestampWidth = endLineTimestamp.original.length;
-
-                const durationInMicroseconds = timePeriod.getDurationAsMicroseconds();
-                const startTimeAsEpoch = timePeriod.startTime.getTimeAsEpoch();
-
-                // Iterate over all lines in the selection and decorate them according to their progress
-                // (i.e. how far they are from the start time of the selection to the end time of the selection)
-                let ranges: vscode.Range[] = [];
+                // First pass: collect all timestamps with their line numbers
+                // Only collect lines that match the custom microsecond format
+                let lineTimestamps: Array<{line: number, timestamp: TimeWithMicroseconds, matchIndex: number, width: number, duration?: moment.Duration}> = [];
                 for (let line = startLine; line <= endLine; line++) {
                     var lineText = editor.document.lineAt(line).text;
-
                     var timestamp = this._timestampParser.getTimestampFromText(lineText);
-                    if (timestamp) {
+                    
+                    // Only include timestamps that are time-only (duration-based, not full dates)
+                    // This filters to only custom microsecond format timestamps
+                    if (timestamp && timestamp.duration) {
                         let timestampWithMicroseconds = new TimeWithMicroseconds(timestamp.moment, timestamp.microseconds);
-                        var progress = (timestampWithMicroseconds.getTimeAsEpoch() - startTimeAsEpoch) / durationInMicroseconds;
+                        lineTimestamps.push({
+                            line: line,
+                            timestamp: timestampWithMicroseconds,
+                            matchIndex: timestamp.matchIndex,
+                            width: timestamp.original.length,
+                            duration: timestamp.duration
+                        });
+                    }
+                }
+                console.log('ProgressIndicator: Collected', lineTimestamps.length, 'custom format timestamps');
 
-                        // Max progress = length of timestamp
-                        var decorationCharacterCount = Math.floor(timestampWidth * progress);
+                // Need at least 2 timestamps to calculate progress
+                if (lineTimestamps.length < 2) {
+                    console.log('ProgressIndicator: Not enough custom format timestamps found');
+                    return;
+                }
 
-                        // set decorationCharacterCount to 0 if not a number or infinit
-                        if (isNaN(decorationCharacterCount) || !isFinite(decorationCharacterCount) || decorationCharacterCount < 0) {
-                            decorationCharacterCount = 0;
-                        }
+                // Calculate total duration from first to last custom timestamp
+                const firstTimestamp = lineTimestamps[0];
+                const lastTimestamp = lineTimestamps[lineTimestamps.length - 1];
+                
+                const startTimeValue = firstTimestamp.duration!.asMilliseconds() * 1000 + firstTimestamp.timestamp.microseconds;
+                const endTimeValue = lastTimestamp.duration!.asMilliseconds() * 1000 + lastTimestamp.timestamp.microseconds;
+                const totalDurationInMicroseconds = endTimeValue - startTimeValue;
+                
+                console.log('ProgressIndicator: Total duration =', totalDurationInMicroseconds, 'microseconds (from', lineTimestamps.length, 'timestamps)');
 
-                        var range = new vscode.Range(line, timestampStartIndex, line, timestampStartIndex + decorationCharacterCount);
+                if (totalDurationInMicroseconds <= 0) {
+                    console.log('ProgressIndicator: Duration is zero or negative, skipping decorations');
+                    return;
+                }
+
+                // Second pass: create decorations based on cumulative progress
+                let ranges: vscode.Range[] = [];
+                for (let i = 0; i < lineTimestamps.length; i++) {
+                    const current = lineTimestamps[i];
+                    
+                    // Calculate current time value (all timestamps here are time-only with duration)
+                    const currentTimeValue = current.duration!.asMilliseconds() * 1000 + current.timestamp.microseconds;
+
+                    // Calculate progress from start to this line (0.0 to 1.0)
+                    const elapsedTime = currentTimeValue - startTimeValue;
+                    const progress = totalDurationInMicroseconds > 0 ? elapsedTime / totalDurationInMicroseconds : 0;
+
+                    // Clamp progress between 0 and 1
+                    const clampedProgress = Math.max(0, Math.min(1, progress));
+
+                    // Calculate decoration width based on progress
+                    // Minimum 1 char for visibility, maximum is the timestamp width
+                    const decorationCharacterCount = Math.max(1, Math.min(current.width, Math.floor(current.width * clampedProgress)));
+
+                    if (decorationCharacterCount > 0) {
+                        const range = new vscode.Range(
+                            current.line,
+                            current.matchIndex,
+                            current.line,
+                            current.matchIndex + decorationCharacterCount
+                        );
                         ranges.push(range);
                     }
                 }
@@ -89,7 +135,6 @@ export class ProgressIndicator {
                 editor.setDecorations(this._decoration, ranges);
 
                 vscode.commands.executeCommand('setContext', Constants.ContextNameIsShowingProgressIndicators, true);
-            }
         }
     }
 
