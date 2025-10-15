@@ -8,8 +8,8 @@ import { TimestampFormatParser, TimestampMatch } from "./TimestampParser";
  */
 export class CustomMicrosecondTimeFormatParser implements TimestampFormatParser {
     // Pattern: HH:MM:SS.mmmmmm
-    // Captures time with milliseconds and microseconds (no start anchor to match anywhere in line)
-    private pattern = new RegExp(`(\\d{2}:\\d{2}:\\d{2})\\.(\\d{3})(?<microseconds>\\d{3})`);
+    // Matches anywhere in the line (no ^ anchor)
+    private pattern = new RegExp(`^(\\d{2}:\\d{2}:\\d{2})\\.(\\d{3})(?<microseconds>\\d{3})`);
 
     parse(text: string): TimestampMatch | null {
         const match = this.pattern.exec(text);
